@@ -26,9 +26,12 @@ CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 STATE_FILE = Path("sent_deals.json")
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s %(levelname)s %(message)s"
 )
+
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("requests").setLevel(logging.WARNING)
 
 session = requests.Session()
 session.headers.update({
@@ -91,6 +94,7 @@ def get_steam_deals():
     seen = set()
 
     while True:
+           logging.info("Steam: checking page offset %s", start)
         response = session.get(
             "https://store.steampowered.com/search/results/",
             params={
