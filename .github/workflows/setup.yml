@@ -1,0 +1,35 @@
+name: Telegram Setup
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Telegram Chat ID
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          python - <<'PY'
+          import os
+          import json
+          import urllib.request
+
+          token = os.environ["BOT_TOKEN"]
+          url = f"https://api.telegram.org/bot{token}/getUpdates"
+
+          try:
+              with urllib.request.urlopen(url, timeout=30) as response:
+                  data = json.load(response)
+
+              for update in data.get("result", []):
+                  chat = update.get("message", {}).get("chat", {})
+                  if chat.get("type") == "private":
+                      print("Chat ID:", chat["id"])
+          except Exception:
+              raise SystemExit("Telegram API request failed")
+          PY
