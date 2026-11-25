@@ -10,6 +10,10 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from pathlib import Path
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import re
+from decimal import Decimal
+
 # ==============================
 # CONFIGURATION
 # ==============================
@@ -88,138 +92,213 @@ def format_end(value):
 # STEAM
 # ==============================
 
+def steam_price(tag):
+    if tag is None:
+        return None
+
+    text = tag.get_text(strip=True)
+
+    match = re.fullmatch(
+        r"(?:US\s*)?\$\s*(\d+(?:,\d{3})*(?:\.\d{2})?)",
+        text
+    )
+
+    if not match:
+        return None
+
+    return int(
+        Decimal(match.group(1).replace(",", "")) * 100
+    )
+
+
 def get_steam_deals():
     deals = []
     start = 0
     seen = set()
 
-    while True:
-        logging.info("Steam: checking page offset %s", start)
-        response = session.get(
-            "https://store.steampowered.com/search/results/",
-            params={
-                "query": "",
-                "start": start,
-                "count": 100,
-                "specials": 1,
-                "category1": 998,
-                "cc": "ge",
-                "l": "english",
-                "infinite": 1
-            },
-            timeout=40
-        )
+    with requests.Session() as steam:
+        steam.headers.update(session.headers)
 
-        response.raise_for_status()
-        data = response.json()
+        while True:
+            logging.info("Steam: checking offset %s", start)
 
-        soup = BeautifulSoup(
-            data.get("results_html", ""),
-            "html.parser"
-        )
-
-        rows = soup.select("a.search_result_row")
-
-        if not rows:
-            break
-
-        for row in rows:
-            appid = row.get("data-ds-appid", "")
-
-            if not appid.isdigit() or appid in seen:
-                continue
-
-            seen.add(appid)
-
-            discount_tag = row.select_one(
-                ".discount_pct, .search_discount"
+            response = steam.get(
+                "https://store.steampowered.com/search/results/",
+                params={
+                    "query": "",
+                    "start": start,
+                    "count": 100,
+                    "specials": 1,
+                    "category1": 998,
+                    "cc": "ge",
+                    "l": "english",
+                    "infinite": 1
+                },
+                timeout=40
             )
 
-            if not discount_tag:
-                continue
+            response.raise_for_status()
+            data = response.json()
 
-            try:
-                pct = int(
+            soup = BeautifulSoup(
+                data.get("results_html", ""),
+                "html.parser"
+            )
+
+            rows = soup.select("a.search_result_row")
+
+            if not rows:
+                break
+
+            new_rows = 0
+
+            for row in rows:
+                appid = row.get("data-ds-appid", "")
+
+                if not appid.isdigit() or appid in seen:
+                    continue
+
+                seen.add(appid)
+                new_rows += 1
+
+                discount_tag = row.select_one(
+                    ".discount_pct, .search_discount"
+                )
+
+                if not discount_tag:
+                    continue
+
+                match = re.search(
+                    r"(\d+)%",
                     discount_tag.get_text(strip=True)
-                    .replace("-", "")
-                    .replace("%", "")
                 )
-            except ValueError:
-                continue
 
-            if pct < MIN_DISCOUNT:
-                continue
+                if not match:
+                    continue
 
-            price_tag = row.select_one(
-                "[data-price-final]"
+                pct = int(match.group(1))
+
+                if pct < MIN_DISCOUNT:
+                    continue
+
+                raw_final = row.get("data-price-final")
+
+                if raw_final is None:
+                    price_tag = row.select_one(
+                        "[data-price-final]"
+                    )
+
+                    if price_tag:
+                        raw_final = price_tag.get(
+                            "data-price-final"
+                        )
+
+                if raw_final is not None:
+                    try:
+                        if int(raw_final) > MAX_FINAL:
+                            continue
+                    except (ValueError, TypeError):
+                        pass
+
+                original = steam_price(
+                    row.select_one(".discount_original_price")
+                )
+
+                final = steam_price(
+                    row.select_one(".discount_final_price")
+                )
+
+                if original is not None:
+                    if original < MIN_ORIGINAL:
+                        continue
+
+                if final is not None:
+                    if final > MAX_FINAL:
+                        continue
+
+                if original is not None and final is not None:
+                    if not qualifies(original, final, "USD"):
+                        continue
+
+                try:
+                    time.sleep(0.5)
+
+                    detail = steam.get(
+                        "https://store.steampowered.com/api/appdetails",
+                        params={
+                            "appids": appid,
+                            "cc": "ge",
+                            "l": "english"
+                        },
+                        timeout=15
+                    )
+
+                    if detail.status_code == 429:
+                        raise RuntimeError("Steam rate limit")
+
+                    detail.raise_for_status()
+
+                    item = detail.json().get(appid, {})
+
+                    if not item.get("success"):
+                        continue
+
+                    game = item.get("data", {})
+
+                    if game.get("type") != "game":
+                        continue
+
+                    price = game.get("price_overview", {})
+
+                    original = price.get("initial", 0)
+                    final = price.get("final", 0)
+                    currency = price.get("currency", "")
+
+                    if not qualifies(original, final, currency):
+                        continue
+
+                    deals.append({
+                        "id": "steam-" + appid,
+                        "name": game.get("name", "Unknown"),
+                        "platform": "Steam",
+                        "original": original,
+                        "final": final,
+                        "discount": discount_percent(
+                            original, final
+                        ),
+                        "end": price.get("discount_expiration"),
+                        "url": (
+                            "https://store.steampowered.com/app/"
+                            + appid + "/"
+                        )
+                    })
+
+                    logging.info(
+                        "Steam match: %s",
+                        game.get("name")
+                    )
+
+                except (requests.RequestException, ValueError):
+                    logging.warning(
+                        "Steam lookup failed: %s", appid
+                    )
+                    raise
+
+            logging.info(
+                "Steam: scanned %s games, found %s matches",
+                len(seen),
+                len(deals)
             )
 
-            if price_tag:
-                try:
-                    if int(price_tag["data-price-final"]) > MAX_FINAL:
-                        continue
-                except (ValueError, TypeError):
-                    pass
+            start += len(rows)
 
-            try:
-                time.sleep(1.5)
+            if start >= int(data["total_count"]):
+                break
 
-                detail = session.get(
-                    "https://store.steampowered.com/api/appdetails",
-                    params={
-                        "appids": appid,
-                        "cc": "ge",
-                        "l": "english"
-                    },
-                    timeout=30
-                )
+            if new_rows == 0 and start > len(rows):
+                raise RuntimeError("Steam pagination stalled")
 
-                detail.raise_for_status()
-
-                item = detail.json().get(appid, {})
-
-                if not item.get("success"):
-                    continue
-
-                game = item.get("data", {})
-
-                if game.get("type") != "game":
-                    continue
-
-                price = game.get("price_overview", {})
-
-                original = price.get("initial", 0)
-                final = price.get("final", 0)
-                currency = price.get("currency", "")
-
-                if not qualifies(original, final, currency):
-                    continue
-
-                deals.append({
-                    "id": "steam-" + appid,
-                    "name": game.get("name", "Unknown"),
-                    "platform": "Steam",
-                    "original": original,
-                    "final": final,
-                    "discount": discount_percent(original, final),
-                    "end": price.get("discount_expiration"),
-                    "url": (
-                        "https://store.steampowered.com/app/"
-                        + appid + "/"
-                    )
-                })
-
-            except (requests.RequestException, ValueError):
-                logging.warning(
-                    "Steam app lookup failed: %s", appid
-                )
-
-        start += 100
-
-        if start >= data.get("total_count", 0):
-            break
-
-        time.sleep(2)
+            time.sleep(0.5)
 
     logging.info("Steam matches: %s", len(deals))
     return deals
@@ -278,6 +357,8 @@ def get_epic_deals():
     start = 0
 
     while True:
+        logging.info("Epic: checking offset %s", start)
+
         response = session.post(
             "https://store.epicgames.com/graphql",
             json={
@@ -433,49 +514,70 @@ def main():
     state = load_state()
     errors = False
 
-    for platform, getter in [
-        ("steam", get_steam_deals),
-        ("epic", get_epic_deals)
-    ]:
-        try:
-            deals = getter()
-        except Exception as error:
-            logging.error(
-                "%s check failed: %s",
-                platform,
-                type(error).__name__
-            )
-            errors = True
-            continue
+    logging.info("Starting Steam and Epic Games checks")
 
-        active_ids = set()
+    with ThreadPoolExecutor(max_workers=2) as executor:
 
-        for deal in deals:
-            key = deal["id"]
-            active_ids.add(key)
+        futures = {
+            executor.submit(get_steam_deals): "steam",
+            executor.submit(get_epic_deals): "epic"
+        }
 
-            signature = {
-                "original": deal["original"],
-                "final": deal["final"]
-            }
+        for future in as_completed(futures):
 
-            if state.get(key) == signature:
-                continue
+            platform = futures[future]
 
             try:
-                send_telegram(deal)
-                state[key] = signature
-                save_state(state)
-            except Exception:
-                logging.error("Telegram delivery failed")
+                deals = future.result()
+
+            except Exception as error:
+                logging.error(
+                    "%s check failed: %s",
+                    platform,
+                    type(error).__name__
+                )
+
                 errors = True
+                continue
 
-        for key in list(state):
-            if key.startswith(platform + "-"):
-                if key not in active_ids:
-                    del state[key]
+            active_ids = set()
 
-        save_state(state)
+            for deal in deals:
+
+                key = deal["id"]
+                active_ids.add(key)
+
+                signature = {
+                    "original": deal["original"],
+                    "final": deal["final"]
+                }
+
+                if state.get(key) == signature:
+                    continue
+
+                try:
+                    send_telegram(deal)
+                    state[key] = signature
+                    save_state(state)
+
+                except Exception:
+                    logging.error("Telegram delivery failed")
+                    errors = True
+
+            for key in list(state):
+
+                if key.startswith(platform + "-"):
+
+                    if key not in active_ids:
+                        del state[key]
+
+            save_state(state)
+
+            logging.info(
+                "%s check completed. Matches: %s",
+                platform,
+                len(deals)
+            )
 
     logging.info("Daily check finished")
 
@@ -485,3 +587,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
