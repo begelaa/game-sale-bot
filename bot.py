@@ -94,7 +94,7 @@ def get_steam_deals():
     seen = set()
 
     while True:
-           logging.info("Steam: checking page offset %s", start)
+        logging.info("Steam: checking page offset %s", start)
         response = session.get(
             "https://store.steampowered.com/search/results/",
             params={
