@@ -1,4 +1,3 @@
-
 import os
 import json
 import time
@@ -45,7 +44,7 @@ def create_session():
     session = requests.Session()
 
     session.headers.update({
-        "User-Agent": "Mozilla/5.0 GameSaleBot/2.0",
+        "User-Agent": "Mozilla/5.0 GameSaleBot/2.1",
         "Accept-Language": "en-US,en;q=0.9"
     })
 
@@ -731,19 +730,22 @@ def get_epic_deals():
                                     TIMEZONE
                                 )
 
+                                start_date = promo.get("startDate")
+                                end_date = promo.get("endDate")
+
+                                if not isinstance(start_date, str) or not isinstance(end_date, str):
+                                    logging.info("Epic: missing promotion dates for %s", game_id)
+                                    continue
+
                                 promo_start = datetime.fromisoformat(
-                                    promo["startDate"].replace(
-                                        "Z",
-                                        "+00:00"
-                                    )
+                                    start_date.replace("Z", "+00:00")
+                                )
+                                promo_end = datetime.fromisoformat(
+                                    end_date.replace("Z", "+00:00")
                                 )
 
-                                promo_end = datetime.fromisoformat(
-                                    promo["endDate"].replace(
-                                        "Z",
-                                        "+00:00"
-                                    )
-                                )
+                                if promo_start.tzinfo is None or promo_end.tzinfo is None:
+                                    continue
 
                                 if promo_start <= now < promo_end:
 
@@ -765,7 +767,8 @@ def get_epic_deals():
                         or game.get("urlSlug")
                     )
 
-                    if not slug:
+                    if not isinstance(slug, str) or not slug.strip("/"):
+                        logging.warning("Epic: missing product link for %s", game_id)
                         continue
 
                     slug = slug.removesuffix(
@@ -826,7 +829,7 @@ def get_epic_deals():
 
             complete = False
 
-            logging.error(
+            logging.exception(
                 "Epic stopped: %s - %s",
                 type(error).__name__,
                 str(error)
@@ -956,7 +959,7 @@ def main():
     total_skipped = 0
 
     logging.info(
-        "Game Sale Bot 2.0 started"
+        "Game Sale Bot 2.1 started"
     )
 
     logging.info(
