@@ -467,10 +467,6 @@
     "original": 2825,
     "final": 141
   },
-  "steam-1210960": {
-    "original": 5999,
-    "final": 599
-  },
   "epic-0b03664349b24b30be49a4bb34735493": {
     "original": 2999,
     "final": 599
@@ -542,5 +538,9 @@
   "epic-7cb7329eed28440eaa66052fcbbaf397": {
     "original": 3399,
     "final": 339
+  },
+  "steam-650510": {
+    "original": 2999,
+    "final": 599
   }
 }
