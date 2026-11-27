@@ -431,18 +431,6 @@
     "original": 3900,
     "final": 585
   },
-  "steam-3730630": {
-    "original": 4599,
-    "final": 229
-  },
-  "steam-3730670": {
-    "original": 4599,
-    "final": 229
-  },
-  "steam-3626470": {
-    "original": 4599,
-    "final": 229
-  },
   "steam-4190260": {
     "original": 2825,
     "final": 141
@@ -541,6 +529,494 @@
   },
   "steam-650510": {
     "original": 2999,
+    "final": 599
+  },
+  "steam-1097350": {
+    "original": 2699,
+    "final": 404
+  },
+  "steam-1024650": {
+    "original": 3299,
+    "final": 362
+  },
+  "steam-2703280": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2741440": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2878360": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2830690": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2830680": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2670740": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2700050": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2878330": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2878340": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2663780": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2947730": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2610200": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2703220": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2947750": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2278120": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2623560": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2947740": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2023640": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2481850": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2878350": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2023630": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2235760": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2630820": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2244840": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2466870": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-942300": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2630810": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2655720": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2466890": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2610220": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2205500": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2506880": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2623570": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2138960": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2270350": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1794740": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2703250": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1885090": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1873990": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1834290": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2182850": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1915940": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1810310": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1885010": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1588140": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2108420": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2079380": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2079370": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1891230": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2022020": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1828940": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2349010": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2312500": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1915910": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1864860": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1902210": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1864850": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1912710": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2235780": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2610210": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2610230": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2703260": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2878320": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2466880": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2703210": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2312510": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-2278130": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-689520": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1345150": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-789220": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-809450": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-845200": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-728050": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1553970": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1912700": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1391990": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-860670": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1902260": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1778470": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1576790": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-763300": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1438940": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-978610": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-937780": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1173340": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1752830": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1547500": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1419440": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1584340": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1413820": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1691790": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1270420": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1607860": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1313330": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1576750": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1691830": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1832370": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1537960": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1553940": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1752850": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1778460": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1306160": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1546210": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1607850": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1306210": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1537940": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1584350": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1441090": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1623300": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1390830": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1470750": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1622270": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1051630": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1765810": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1765800": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1522530": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1521770": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1502730": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1191540": {
+    "original": 8999,
+    "final": 449
+  },
+  "steam-1210960": {
+    "original": 5999,
     "final": 599
   }
 }
