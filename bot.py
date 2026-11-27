@@ -596,10 +596,15 @@ def get_epic_deals():
                     start
                 )
 
-                for attempt in range(
-                    1,
-                    MAX_RETRIES + 1
-                ):
+                # GraphQL can return partial data together with errors.
+                # Keep usable products and mark the scan incomplete rather
+                # than discarding the entire page.
+                price_failed_indices = set()
+                promotion_failed_indices = set()
+                page_ready = False
+                catalog_data = {}
+
+                for attempt in range(1, MAX_RETRIES + 1):
 
                     response = request_api(
                         epic,
@@ -617,40 +622,105 @@ def get_epic_deals():
                         timeout=40
                     )
 
-                    result = response.json()
+                    try:
+                        result = response.json()
+                    except ValueError as error:
+                        logging.warning(
+                            "Epic: invalid JSON response (%s/%s): %s",
+                            attempt,
+                            MAX_RETRIES,
+                            error
+                        )
 
-                    if not result.get("errors"):
+                        if attempt == MAX_RETRIES:
+                            raise RuntimeError(
+                                "Epic returned invalid JSON"
+                            ) from error
+
+                        time.sleep(15 * attempt)
+                        continue
+
+                    data = result.get("data") or {}
+                    catalog_data = (
+                        (data.get("Catalog") or {})
+                        .get("searchStore") or {}
+                    )
+
+                    elements = catalog_data.get("elements")
+                    paging = catalog_data.get("paging") or {}
+                    errors_list = result.get("errors") or []
+
+                    # A page is usable if the product list and total count
+                    # were returned, even when individual fields failed.
+                    if (
+                        isinstance(elements, list)
+                        and paging.get("total") is not None
+                    ):
+
+                        page_ready = True
+
+                        if errors_list:
+                            complete = False
+
+                            for error in errors_list:
+
+                                path = error.get("path") or []
+
+                                field = (
+                                    path[4]
+                                    if len(path) > 4
+                                    else None
+                                )
+
+                                index = (
+                                    path[3]
+                                    if len(path) > 3
+                                    else None
+                                )
+
+                                if (
+                                    len(path) >= 5
+                                    and path[0] == "Catalog"
+                                    and path[1] == "searchStore"
+                                    and path[2] == "elements"
+                                    and isinstance(index, int)
+                                ):
+
+                                    if field == "price":
+                                        price_failed_indices.add(index)
+
+                                    elif field == "promotions":
+                                        promotion_failed_indices.add(index)
+
+                                logging.warning(
+                                    "Epic partial GraphQL error: %s | path: %s",
+                                    error.get("message", "Unknown GraphQL error"),
+                                    path
+                                )
+
                         break
 
                     logging.error(
-                        "Epic GraphQL errors: %s",
-                        result["errors"]
+                        "Epic GraphQL request failed (%s/%s): %s",
+                        attempt,
+                        MAX_RETRIES,
+                        errors_list or "Missing catalog data"
                     )
 
                     if attempt == MAX_RETRIES:
-
                         raise RuntimeError(
-                            "Epic GraphQL query failed"
+                            "Epic GraphQL query failed: no usable catalog data"
                         )
 
                     time.sleep(15 * attempt)
 
-                catalog = result[
-                    "data"
-                ][
-                    "Catalog"
-                ][
-                    "searchStore"
-                ]
+                if not page_ready:
+                    raise RuntimeError(
+                        "Epic: no usable catalog data"
+                    )
 
-                elements = catalog.get(
-                    "elements",
-                    []
-                )
-
-                total = int(
-                    catalog["paging"]["total"]
-                )
+                elements = catalog_data.get("elements", [])
+                total = int(catalog_data["paging"]["total"])
 
                 if not elements:
 
@@ -661,7 +731,15 @@ def get_epic_deals():
 
                 new_rows = 0
 
-                for game in elements:
+                for element_index, game in enumerate(elements):
+
+                    if not isinstance(game, dict):
+                        complete = False
+                        logging.warning(
+                            "Epic: empty/invalid product at index %s",
+                            element_index
+                        )
+                        continue
 
                     game_id = game.get("id")
 
@@ -677,27 +755,32 @@ def get_epic_deals():
                     if game.get("offerType") != "BASE_GAME":
                         continue
 
-                    price = (
-                        game.get("price") or {}
-                    ).get(
-                        "totalPrice",
-                        {}
-                    ) or {}
+                    # A GraphQL error on this product's price means we
+                    # cannot safely determine whether it qualifies.
+                    if element_index in price_failed_indices:
 
-                    original = price.get(
-                        "originalPrice",
-                        0
-                    )
+                        logging.warning(
+                            "Epic: skipping game with unavailable price: %s",
+                            game_id
+                        )
 
-                    final = price.get(
-                        "discountPrice",
-                        0
-                    )
+                        continue
 
-                    currency = price.get(
-                        "currencyCode",
-                        ""
-                    )
+                    price_data = game.get("price")
+
+                    if not isinstance(price_data, dict):
+                        complete = False
+                        logging.warning(
+                            "Epic: missing price data for %s",
+                            game_id
+                        )
+                        continue
+
+                    price = price_data.get("totalPrice") or {}
+
+                    original = price.get("originalPrice", 0)
+                    final = price.get("discountPrice", 0)
+                    currency = price.get("currencyCode", "")
 
                     if not qualifies(
                         original,
@@ -708,59 +791,65 @@ def get_epic_deals():
 
                     end = None
 
-                    promotions = (
-                        game.get("promotions") or {}
-                    )
+                    if element_index in promotion_failed_indices:
 
-                    for group in (
-                        promotions.get(
-                            "promotionalOffers"
-                        ) or []
-                    ):
+                        logging.warning(
+                            "Epic: promotion data unavailable: %s",
+                            game_id
+                        )
 
-                        for promo in (
-                            group.get(
-                                "promotionalOffers"
-                            ) or []
+                    else:
+
+                        promotions = game.get("promotions") or {}
+
+                        for group in (
+                            promotions.get("promotionalOffers") or []
                         ):
 
-                            try:
-
-                                now = datetime.now(
-                                    TIMEZONE
-                                )
-
-                                start_date = promo.get("startDate")
-                                end_date = promo.get("endDate")
-
-                                if not isinstance(start_date, str) or not isinstance(end_date, str):
-                                    logging.info("Epic: missing promotion dates for %s", game_id)
-                                    continue
-
-                                promo_start = datetime.fromisoformat(
-                                    start_date.replace("Z", "+00:00")
-                                )
-                                promo_end = datetime.fromisoformat(
-                                    end_date.replace("Z", "+00:00")
-                                )
-
-                                if promo_start.tzinfo is None or promo_end.tzinfo is None:
-                                    continue
-
-                                if promo_start <= now < promo_end:
-
-                                    end = promo["endDate"]
-                                    break
-
-                            except (
-                                KeyError,
-                                ValueError,
-                                TypeError
+                            for promo in (
+                                group.get("promotionalOffers") or []
                             ):
-                                continue
 
-                        if end:
-                            break
+                                try:
+
+                                    now = datetime.now(TIMEZONE)
+
+                                    start_date = promo.get("startDate")
+                                    end_date = promo.get("endDate")
+
+                                    if (
+                                        not isinstance(start_date, str)
+                                        or not isinstance(end_date, str)
+                                    ):
+                                        continue
+
+                                    promo_start = datetime.fromisoformat(
+                                        start_date.replace("Z", "+00:00")
+                                    )
+
+                                    promo_end = datetime.fromisoformat(
+                                        end_date.replace("Z", "+00:00")
+                                    )
+
+                                    if (
+                                        promo_start.tzinfo is None
+                                        or promo_end.tzinfo is None
+                                    ):
+                                        continue
+
+                                    if promo_start <= now < promo_end:
+                                        end = end_date
+                                        break
+
+                                except (
+                                    ValueError,
+                                    TypeError,
+                                    AttributeError
+                                ):
+                                    continue
+
+                            if end:
+                                break
 
                     slug = (
                         game.get("productSlug")
@@ -768,19 +857,17 @@ def get_epic_deals():
                     )
 
                     if not isinstance(slug, str) or not slug.strip("/"):
-                        logging.warning("Epic: missing product link for %s", game_id)
+                        logging.warning(
+                            "Epic: missing product link for %s",
+                            game_id
+                        )
                         continue
 
-                    slug = slug.removesuffix(
-                        "/home"
-                    ).strip("/")
+                    slug = slug.removesuffix("/home").strip("/")
 
                     deal = {
                         "id": "epic-" + game_id,
-                        "name": game.get(
-                            "title",
-                            "Unknown"
-                        ),
+                        "name": game.get("title", "Unknown"),
                         "platform": "Epic Games",
                         "original": original,
                         "final": final,
@@ -818,7 +905,6 @@ def get_epic_deals():
                     break
 
                 if new_rows == 0:
-
                     raise RuntimeError(
                         "Epic pagination stalled"
                     )
